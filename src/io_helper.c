@@ -67,6 +67,7 @@ int open_listen_fd(int port) {
     server_addr.sin_family = AF_INET; 
     server_addr.sin_addr.s_addr = htonl(INADDR_ANY); 
     server_addr.sin_port = htons((unsigned short) port); 
+
     if (bind(listen_fd, (sockaddr_t *) &server_addr, sizeof(server_addr)) < 0) {
 	fprintf(stderr, "bind() failed\n");
 	return -1;
@@ -77,7 +78,12 @@ int open_listen_fd(int port) {
 	fprintf(stderr, "listen() failed\n");
 	return -1;
     }
+    
     return listen_fd;
 }
 
 
+char* toLower(char* s) {
+  for(char *p=s; *p; p++) *p=tolower(*p);
+  return s;
+}

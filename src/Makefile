@@ -11,7 +11,7 @@ OBJS = wserver.o wclient.o request.o io_helper.o
 all: wserver wclient spin.cgi
 
 wserver: wserver.o request.o io_helper.o
-	$(CC) $(CFLAGS) -o wserver wserver.o request.o io_helper.o 
+	$(CC) $(CFLAGS) -o wserver wserver.o request.o io_helper.o
 
 wclient: wclient.o io_helper.o
 	$(CC) $(CFLAGS) -o wclient wclient.o io_helper.o
@@ -20,7 +20,7 @@ spin.cgi: spin.c
 	$(CC) $(CFLAGS) -o spin.cgi spin.c
 
 .c.o:
-	$(CC) $(CFLAGS) -o $@ -c $<
+	$(CC) $(CFLAGS) -o $@ -c $< 
 
 clean:
 	-rm -f $(OBJS) wserver wclient spin.cgi
