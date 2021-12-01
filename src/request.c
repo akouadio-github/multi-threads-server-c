@@ -3,6 +3,7 @@
 #include <pthread.h>
 #include <stdio.h>
 #include <string.h>
+#include <sys/types.h>
 
 pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
@@ -98,9 +99,19 @@ int insert_fifo_sff(request element, int buffer_max_size)
 
 request remove_sff()
 {
-	int small_req_filesize = buffer[0].filesize;
+	int small_req_filesize = 0;
 	int small_index = 0;
 	request req_output;
+
+	small_req_filesize = buffer[0].filesize;
+	req_output.fd = NULL;
+	req_output.filename = NULL;
+	req_output.filesize = 0;
+	req_output.is_static = 0;
+	req_output.cgiargs = NULL;
+
+	if (buffer_current_size == 0)
+    	return req_output;
 
 	for (int i = 1; i < buffer_current_size; i++)
 	{
@@ -113,15 +124,18 @@ request remove_sff()
 	req_output.fd = buffer[small_index].fd;
 	req_output.filename = buffer[small_index].filename;
 	req_output.filesize = buffer[small_index].filesize;
+	req_output.is_static = buffer[small_index].is_static;
+	req_output.cgiargs =  buffer[small_index].cgiargs;
 
 	for (int i = small_index; i < buffer_current_size - 1; i++)
 	{
-		buffer[i].fd = buffer[i + 1].fd;
-		strcpy(buffer[i].filename, buffer[i + 1].filename);
-		buffer[i].filesize = buffer[i + 1].filesize;
+		buffer[i] = buffer[i + 1];
+		// buffer[i].fd = buffer[i + 1].fd;
+		// strcpy(buffer[i].filename, buffer[i + 1].filename);
+		// buffer[i].filesize = buffer[i + 1].filesize;
 	}
-	printf("Request for %s is removed from the buffer.\n", req_output.filename);
-	printf("\n\n");
+	// printf("\t\t Manage request : (Socket Id) %d (filename) %s \n", req_output.fd, req_output.filename);
+
 	buffer_current_size--;
 	return req_output;
 }
@@ -152,7 +166,7 @@ request remove_fifo()
 	{
 		buffer[i] = buffer[i + 1];
 	}
-	printf("\t\t Manage request : (Socket Id) %d (filename) %s \n", req_output.fd, req_output.filename);
+	// printf("\t\t Manage request : (Socket Id) %d (filename) %s \n", req_output.fd, req_output.filename);
 
 	buffer_current_size--;
 
@@ -330,6 +344,7 @@ void *request_salve_handle()
 
 		if (current_request.is_static)
 		{
+			printf("\nThread %d works with %d \n", gettid(), current_request.fd);
 			request_serve_static(current_request.fd, current_request.filename, current_request.filesize);
 		}
 		else
@@ -338,15 +353,28 @@ void *request_salve_handle()
 		}
 		close_or_die(current_request.fd);
 	}
-	// 	while (policy == 2)
-	// 	{
-	// 		current_request = remove_sff(buffer);
-	// 		while (current_request.fd == -1)
-	// 		{
-	// 			printf("Empty buffer... Waiting");
-	// 			pthread_cond_wait(&cond, &lock);
-	// 			current_request = remove_sff(buffer);
-	// 		}
-	// 	}
-	//
+		while (policy == 2)
+		{
+		request current_request;
+		pthread_mutex_lock(&lock);
+		current_request = remove_sff();
+		while (current_request.fd == NULL)
+		{
+			pthread_cond_wait(&cond, &lock);
+			current_request = remove_sff();
+		}
+		pthread_mutex_unlock(&lock);
+
+		if (current_request.is_static)
+		{
+			printf("\nThread %d works with %d \n", gettid(), current_request.fd);
+			request_serve_static(current_request.fd, current_request.filename, current_request.filesize);
+			printf("\nThread %d has finished with %d \n", gettid(), current_request.fd);
+		}
+		else
+		{
+			request_serve_dynamic(current_request.fd, current_request.filename, current_request.cgiargs);
+		}
+		close_or_die(current_request.fd);
+		}
 }
