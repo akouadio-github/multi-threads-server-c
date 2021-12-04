@@ -9,7 +9,6 @@ pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
 
 int buffer_current_size = 0;
-int policy = DEFAULT_POLICY;
 int buffer_max_size;
 request buffer[INFINTY];
 
@@ -69,12 +68,12 @@ void request_scheduler(int fd)
 
 	pthread_mutex_lock(&lock);
 	// adding requests to buffer
-	result = insert_fifo_sff(temp_, buffer_max_size);
+	result = insert_in_requests_buffer(temp_, buffer_max_size);
 	// printf("%d-------\n", result);
 
 	while (result == -1)
 	{
-		result = insert_fifo_sff(temp_, buffer_max_size); //keep checking if the request can be added or not till the point request finally gets added
+		result = insert_in_requests_buffer(temp_, buffer_max_size); //keep checking if the request can be added or not till the point request finally gets added
 	}
 
 	// signaling the waiting thread
@@ -82,7 +81,7 @@ void request_scheduler(int fd)
 	pthread_mutex_unlock(&lock);
 }
 
-int insert_fifo_sff(request element, int buffer_max_size)
+int insert_in_requests_buffer(request element, int buffer_max_size)
 {
 
 	if (buffer_current_size == buffer_max_size)
@@ -92,55 +91,12 @@ int insert_fifo_sff(request element, int buffer_max_size)
 		buffer[buffer_current_size] = element;
 		buffer_current_size++;
 	}
-	printf(" \a New insertion : (Socket Id) %d (filename) %s \n", buffer[buffer_current_size - 1].fd, buffer[buffer_current_size - 1].filename);
+	printf("--New insertion : (Socket Id) %d (filename) %s\n", buffer[buffer_current_size - 1].fd, buffer[buffer_current_size - 1].filename);
 	// print_buffer(buffer, buffer_current_size);
 	return 0;
 }
 
-request remove_sff()
-{
-	int small_req_filesize = 0;
-	int small_index = 0;
-	request req_output;
-
-	small_req_filesize = buffer[0].filesize;
-	req_output.fd = NULL;
-	req_output.filename = NULL;
-	req_output.filesize = 0;
-	req_output.is_static = 0;
-	req_output.cgiargs = NULL;
-
-	if (buffer_current_size == 0)
-    	return req_output;
-
-	for (int i = 1; i < buffer_current_size; i++)
-	{
-		if (buffer[i].filesize < small_req_filesize)
-		{
-			small_req_filesize = buffer[i].filesize;
-			small_index = i;
-		}
-	}
-	req_output.fd = buffer[small_index].fd;
-	req_output.filename = buffer[small_index].filename;
-	req_output.filesize = buffer[small_index].filesize;
-	req_output.is_static = buffer[small_index].is_static;
-	req_output.cgiargs =  buffer[small_index].cgiargs;
-
-	for (int i = small_index; i < buffer_current_size - 1; i++)
-	{
-		buffer[i] = buffer[i + 1];
-		// buffer[i].fd = buffer[i + 1].fd;
-		// strcpy(buffer[i].filename, buffer[i + 1].filename);
-		// buffer[i].filesize = buffer[i + 1].filesize;
-	}
-	// printf("\t\t Manage request : (Socket Id) %d (filename) %s \n", req_output.fd, req_output.filename);
-
-	buffer_current_size--;
-	return req_output;
-}
-
-request remove_fifo()
+request remove_from_requests_buffer()
 {
 	
 	request req_output;
@@ -327,24 +283,21 @@ void request_serve_static(int fd, char *filename, int filesize)
 void *request_salve_handle()
 {
 
-	while (policy == 1)
+	while (1)
 	{
 		request current_request;
 		pthread_mutex_lock(&lock);
-		current_request = remove_fifo();
+		current_request = remove_from_requests_buffer();
 		while (current_request.fd == NULL)
 		{
 			pthread_cond_wait(&cond, &lock);
-			current_request = remove_fifo();
+			current_request = remove_from_requests_buffer();
 		}
 		pthread_mutex_unlock(&lock);
-		// printf("%d\n", current_request.is_static);
-		// printf("%s\n", current_request.filename);
-		// printf("%d\n", current_request.filesize);
 
 		if (current_request.is_static)
 		{
-			printf("\nThread %d works with %d \n", gettid(), current_request.fd);
+			printf("--Thread %d works with %d \n", gettid(), current_request.fd);
 			request_serve_static(current_request.fd, current_request.filename, current_request.filesize);
 		}
 		else
@@ -353,28 +306,4 @@ void *request_salve_handle()
 		}
 		close_or_die(current_request.fd);
 	}
-		while (policy == 2)
-		{
-		request current_request;
-		pthread_mutex_lock(&lock);
-		current_request = remove_sff();
-		while (current_request.fd == NULL)
-		{
-			pthread_cond_wait(&cond, &lock);
-			current_request = remove_sff();
-		}
-		pthread_mutex_unlock(&lock);
-
-		if (current_request.is_static)
-		{
-			printf("\nThread %d works with %d \n", gettid(), current_request.fd);
-			request_serve_static(current_request.fd, current_request.filename, current_request.filesize);
-			printf("\nThread %d has finished with %d \n", gettid(), current_request.fd);
-		}
-		else
-		{
-			request_serve_dynamic(current_request.fd, current_request.filename, current_request.cgiargs);
-		}
-		close_or_die(current_request.fd);
-		}
 }

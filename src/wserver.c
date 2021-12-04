@@ -24,7 +24,7 @@ int main(int argc, char *argv[])
 	int buffer_size = DEFAULT_BUFFER_SIZE;
 	
 
-	while ((c = getopt(argc, argv, "d:p:t:b:s:")) != -1)
+	while ((c = getopt(argc, argv, "d:p:t:b:")) != -1)
 		switch (c)
 		{
 		case 'd':
@@ -39,12 +39,9 @@ int main(int argc, char *argv[])
 		case 'b':
 			buffer_size = atoi(optarg);
 			break;
-		case 's':
-			if(strcmp(optarg, "SFF") == 0)
-			policy = 2 ; // SFF
-			break;
+
 		default:
-			fprintf(stderr, "usage: ./wserver [-d <basedir>] [-p <portnum>] [-t s_threads_num] [-b buffer_size] [-s policy (FIFO or SFF)]\n");
+			fprintf(stderr, "usage: ./wserver [-d <basedir>] [-p <portnum>] [-t s_threads_num] [-b buffer_size]\n");
 			exit(1);
 		}
 		//Create threads and buffers
