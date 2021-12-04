@@ -135,6 +135,7 @@ request remove_from_requests_buffer()
 // 	for (int i = 0; i < last; i++)
 // 	{
 // 		fflush(stdout);
+		
 // 		fflush(stdout);
 // 	}
 // }
@@ -302,6 +303,7 @@ void *request_salve_handle()
 		}
 		else
 		{
+			printf("--Thread %d works with %d \n", gettid(), current_request.fd);
 			request_serve_dynamic(current_request.fd, current_request.filename, current_request.cgiargs);
 		}
 		close_or_die(current_request.fd);
