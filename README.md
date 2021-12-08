@@ -37,4 +37,6 @@ https://gitlab.imt-atlantique.fr/ue-os/2021/concurrency-webserver
 ## Project status
 Slowed down for the moment.
 
+## Licence
+Licence [MIT](https://gitlab.imt-atlantique.fr/k21kouak/tobi-toba-server/-/blob/main/LICENSE)
 
