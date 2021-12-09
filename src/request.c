@@ -10,66 +10,19 @@ pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
 
 int buffer_current_size = 0;
 int buffer_max_size;
-request buffer[INFINTY];
+int buffer[INFINITY];
 
 void request_scheduler(int fd)
 {
-	char filename[MAXBUF];
-	char cgiargs[MAXBUF];
-	char uri[MAXBUF];
 
 	int result;
-	int is_static;
-	struct stat sbuf;
-	char temp[MAXBUF];
-	char method[MAXBUF], version[MAXBUF];
-	request temp_;
-
-	readline_or_die(fd, temp, MAXBUF);
-	sscanf(temp, "%s %s %s", method, uri, version);
-	
-	if (strcasecmp(method, "GET"))
-	{
-		request_error(fd, method, "501", "Not Implemented", "server does not implement this method");
-		return;
-	}
-	request_read_headers(fd);
-	is_static = request_parse_uri(uri, filename, cgiargs);
-
-	if (stat(filename, &sbuf) < 0)
-	{
-		request_error(fd, filename, "404", "Not found", "server could not find this file");
-		return;
-	}
-	if (is_static)
-	{
-		if (!(S_ISREG(sbuf.st_mode)) || !(S_IRUSR & sbuf.st_mode))
-		{
-			request_error(fd, filename, "403", "Forbidden", "server could not read this file");
-			return;
-		}
-	}
-	else
-	{
-		if (!(S_ISREG(sbuf.st_mode)) || !(S_IXUSR & sbuf.st_mode))
-		{
-			request_error(fd, filename, "403", "Forbidden", "server could not run this CGI program");
-			return;
-		}
-	}
-
-	temp_.fd = fd;
-	temp_.filename = filename;
-	temp_.filesize = sbuf.st_size;
-	temp_.is_static = is_static;
-	temp_.cgiargs = cgiargs;
 
 	pthread_mutex_lock(&lock);
-	result = insert_in_requests_buffer(temp_, buffer_max_size);
+	result = insert_in_requests_buffer(fd, buffer_max_size);
 	
 	while (result == -1)
 	{
-		result = insert_in_requests_buffer(temp_, buffer_max_size); //keep checking if the request can be added or not till the point request finally gets added
+		result = insert_in_requests_buffer(fd, buffer_max_size); //keep checking if the request can be added or not till the point request finally gets added
 	}
 
 	// signaling the waiting thread
@@ -77,7 +30,7 @@ void request_scheduler(int fd)
 	pthread_mutex_unlock(&lock);
 }
 
-int insert_in_requests_buffer(request element, int buffer_max_size)
+int insert_in_requests_buffer(int element, int buffer_max_size)
 {
 
 	if (buffer_current_size == buffer_max_size)
@@ -87,32 +40,21 @@ int insert_in_requests_buffer(request element, int buffer_max_size)
 		buffer[buffer_current_size] = element;
 		buffer_current_size++;
 	}
-	printf("--> New insertion : (Socket Id) %d (filename) %s\n", buffer[buffer_current_size - 1].fd, buffer[buffer_current_size - 1].filename);
-	// print_buffer(buffer, buffer_current_size);
+	printf("--> New insertion : (Socket Id) %d \n", buffer[buffer_current_size - 1]);
 	return 0;
 }
 
-request remove_from_requests_buffer()
+int remove_from_requests_buffer()
 {
 	
-	request req_output;
+	int req_output;
 
-	// req_output = buffer[0];
-
-	req_output.fd = NULL;
-	req_output.filename = NULL;
-	req_output.filesize = 0;
-	req_output.is_static = 0;
-	req_output.cgiargs = NULL;
+	req_output = NULL;
 
 	if (buffer_current_size == 0)
     	return req_output;
 
-	req_output.fd = buffer[0].fd ;
-	req_output.filename = buffer[0].filename;
-	req_output.filesize = buffer[0].filesize;
-	req_output.is_static = buffer[0].is_static;
-	req_output.cgiargs = buffer[0].cgiargs;
+	req_output = buffer[0];
 
 	for (int i = 0; i < buffer_current_size - 1; i++)
 	{
@@ -155,6 +97,7 @@ void request_error(int fd, char *cause, char *errnum, char *shortmsg, char *long
 
 	// Write out the body last
 	write_or_die(fd, body, strlen(body));
+
 }
 
 void request_read_headers(int fd)
@@ -269,29 +212,81 @@ void request_serve_static(int fd, char *filename, int filesize)
 
 void *request_salve_handle()
 {
+	int is_static;
+	struct stat sbuf;
+	char temp[MAXBUF];
+	char method[MAXBUF], version[MAXBUF];
+	char filename[MAXBUF];
+	char cgiargs[MAXBUF];
+	char uri[MAXBUF];
+
+	int has_error;
+	int current_request;
 
 	while (1)
 	{
-		request current_request;
+		has_error = 0 ;
 		pthread_mutex_lock(&lock);
 		current_request = remove_from_requests_buffer();
-		while (current_request.fd == NULL)
+		while (current_request == NULL)
 		{
 			pthread_cond_wait(&cond, &lock);
 			current_request = remove_from_requests_buffer();
 		}
 		pthread_mutex_unlock(&lock);
 
-		if (current_request.is_static)
+		readline_or_die(current_request, temp, MAXBUF);
+		sscanf(temp, "%s %s %s", method, uri, version);
+
+		if (strcasecmp(method, "GET"))
 		{
-			printf("--> Thread %d works with %d \n", gettid(), current_request.fd);
-			request_serve_static(current_request.fd, current_request.filename, current_request.filesize);
+			request_error(current_request, method, "501", "Not Implemented", "server does not implement this method");
+			has_error = 1;
+		}
+		request_read_headers(current_request);
+		is_static = request_parse_uri(uri, filename, cgiargs);
+
+		if (stat(filename, &sbuf) < 0 && !has_error)
+		{
+			printf("--> Thread %d works with socket %d (File Error %s) \n", gettid(), current_request, filename);
+			request_error(current_request, filename, "404", "Not found", "server could not find this file");
+			has_error = 1;
+
+		}
+		if (is_static)
+		{
+			if (!(S_ISREG(sbuf.st_mode)) || !(S_IRUSR & sbuf.st_mode) && !has_error)
+			{
+				printf("--> Thread %d works with socket %d ( Could not read this file %s)\n", gettid(), current_request, filename);
+				request_error(current_request, filename, "403", "Forbidden", "server could not read this file");
+				has_error = 1;
+
+			}
 		}
 		else
 		{
-			printf("--> Thread %d works with %d \n", gettid(), current_request.fd);
-			request_serve_dynamic(current_request.fd, current_request.filename, current_request.cgiargs);
+			if (!(S_ISREG(sbuf.st_mode)) || !(S_IXUSR & sbuf.st_mode) && !has_error)
+			{
+				printf("--> Thread %d works with socket %d (Could not execute this program %s)\n", gettid(), current_request, filename);
+				request_error(current_request, filename, "403", "Forbidden", "server could not run this CGI program");
+				has_error = 1;
+			}
 		}
-		close_or_die(current_request.fd);
+		if (has_error){
+			close_or_die(current_request);
+		}
+		else {
+			if (is_static)
+			{
+				printf("--> Thread %d works with socket %d (static filename %s, size %d)\n", gettid(), current_request, filename, sbuf.st_size);
+				request_serve_static(current_request, filename, sbuf.st_size);
+			}
+			else
+			{
+				printf("--> Thread %d works with socket %d (dynamic executable %s, args %s)\n", gettid(), current_request, filename, cgiargs);
+				request_serve_dynamic(current_request, filename, cgiargs);
+			}
+			close_or_die(current_request);
+		}
 	}
 }

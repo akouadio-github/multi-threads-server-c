@@ -28,8 +28,9 @@ int main(int argc, char *argv[])
 		{
 		case 'd':
 			root_dir = optarg;
-
+			chdir_or_die(root_dir);
 			break;
+
 		case 'p':
 			port = atoi(optarg);
 			if (port <= 1023 || port > 65535)
@@ -38,13 +39,21 @@ int main(int argc, char *argv[])
 				exit(1);
 			 }
 			break;
+
 		case 't':
 			s_threads_num = atoi(optarg);
-
+			if(s_threads_num == 0){
+				fprintf(stderr, "[-t <s_threads_num>]  the number of threads must be greater than 0 \n");
+				exit(1);
+				}
 			break;
+
 		case 'b':
 			buffer_size = atoi(optarg);
-
+			if(buffer_size == 0) {
+				fprintf(stderr, "[-b <buffer_size>]  the buffer size must be greater than 0 \n");
+				exit(1);
+			}
 			break;
 
 		default:
@@ -94,3 +103,4 @@ void *master_thread(void *input){
 		
 	}
 }
+

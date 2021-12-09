@@ -1,5 +1,8 @@
 #ifndef __WSERVER_H__
 
+#include <dirent.h>
+#include <errno.h>
+
 #define ROOT_DIR_MAX_BUF 1024
 #define DEFAULT_BUFFER_SIZE 1 
 #define DEFAULT_PORT 10000 

@@ -2,24 +2,14 @@
 
 
 
-#define INFINTY 5000
+#define INFINITY 5000
 #define DEFAULT_BUFFER_SIZE 1 
 #define DEFAULT_SLAVES_THREADS_NUMBER 1
 #define MAXBUF 8192
 
-typedef struct request {
-  int fd;
-  char *filename;
-  int filesize;
-  char *cgiargs;
-  int is_static;
-
-} request ;
-
-
 
 extern int buffer_max_size;
-extern request buffer[INFINTY] ;
+extern int buffer[INFINITY] ;
 
 
 
