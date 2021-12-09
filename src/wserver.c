@@ -36,7 +36,7 @@ int main(int argc, char *argv[])
 			{
 				fprintf(stderr, "[-p <port>]  port number must be greater than 1023 and less than 65535 \n");
 				exit(1);
-			}
+			 }
 			break;
 		case 't':
 			s_threads_num = atoi(optarg);

@@ -26,10 +26,8 @@ void request_scheduler(int fd)
 	request temp_;
 
 	readline_or_die(fd, temp, MAXBUF);
-	// Remove them, don't forget
 	sscanf(temp, "%s %s %s", method, uri, version);
-	// printf("method:%s uri:%s version:%s\n", method, uri, version);
-
+	
 	if (strcasecmp(method, "GET"))
 	{
 		request_error(fd, method, "501", "Not Implemented", "server does not implement this method");
@@ -67,10 +65,8 @@ void request_scheduler(int fd)
 	temp_.cgiargs = cgiargs;
 
 	pthread_mutex_lock(&lock);
-	// adding requests to buffer
 	result = insert_in_requests_buffer(temp_, buffer_max_size);
-	// printf("%d-------\n", result);
-
+	
 	while (result == -1)
 	{
 		result = insert_in_requests_buffer(temp_, buffer_max_size); //keep checking if the request can be added or not till the point request finally gets added
