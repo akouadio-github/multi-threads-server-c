@@ -17,7 +17,7 @@ prompt > make clean
 ```
 
 ## Usage 
-The server (suppoort only get requests)
+**The server (suppoort only get requests)**
 ```
 prompt > ./wserver [-d <base_dir>] [-p <port_num>] [-t s_threads_num] [-b buffer_size]
 ```
@@ -40,10 +40,24 @@ For example:
 prompt > ./wserver -d ./ -p 30000 -t 4 -b 15
 ```
 
-The client
+**The client**
+Basicaly a client could be executed like this
 ```
 prompt > ./wclient [ <server_ip>] [-p <server_port>] [file_to_fetch_or_execute]
 ```
+
+If you want to have a simulteneous execution, you could this bash script which cgi for example
+```
+echo Started
+
+	for i in {1..10} 
+	do
+		./wclient localhost 30000 /spin.cgi?$i &
+	done
+
+echo Finished
+```
+
 
 ## Contributing 
 Contributions, issues and feature requests are welcome.
