@@ -43,16 +43,17 @@ prompt > ./wserver -d ./ -p 30000 -t 4 -b 15
 **The client**
 Basicaly a client could be executed like this
 ```
-prompt > ./wclient [ <server_ip>] [-p <server_port>] [file_to_fetch_or_execute]
+prompt > ./wclient [ <server_ip>] [-p <server_port>] [file_to_fetch_or_execute and args]
 ```
 
 If you want to have a simulteneous execution, you could this bash script which cgi for example
 ```
 echo Started
 
-	for i in {1..10} 
+	for i in {1..5} 
 	do
 		./wclient localhost 30000 /spin.cgi?$i &
+		./wclient localhost 30000 /tes$i.html &
 	done
 
 echo Finished
