@@ -91,7 +91,7 @@ int insert_in_requests_buffer(request element, int buffer_max_size)
 		buffer[buffer_current_size] = element;
 		buffer_current_size++;
 	}
-	printf("--New insertion : (Socket Id) %d (filename) %s\n", buffer[buffer_current_size - 1].fd, buffer[buffer_current_size - 1].filename);
+	printf("--> New insertion : (Socket Id) %d (filename) %s\n", buffer[buffer_current_size - 1].fd, buffer[buffer_current_size - 1].filename);
 	// print_buffer(buffer, buffer_current_size);
 	return 0;
 }
@@ -122,23 +122,13 @@ request remove_from_requests_buffer()
 	{
 		buffer[i] = buffer[i + 1];
 	}
-	// printf("\t\t Manage request : (Socket Id) %d (filename) %s \n", req_output.fd, req_output.filename);
 
 	buffer_current_size--;
 
 	return req_output;
 }
 
-// void print_buffer(request *buffer, int last)
-// {
 
-// 	for (int i = 0; i < last; i++)
-// 	{
-// 		fflush(stdout);
-		
-// 		fflush(stdout);
-// 	}
-// }
 
 void request_error(int fd, char *cause, char *errnum, char *shortmsg, char *longmsg)
 {
@@ -298,12 +288,12 @@ void *request_salve_handle()
 
 		if (current_request.is_static)
 		{
-			printf("--Thread %d works with %d \n", gettid(), current_request.fd);
+			printf("--> Thread %d works with %d \n", gettid(), current_request.fd);
 			request_serve_static(current_request.fd, current_request.filename, current_request.filesize);
 		}
 		else
 		{
-			printf("--Thread %d works with %d \n", gettid(), current_request.fd);
+			printf("--> Thread %d works with %d \n", gettid(), current_request.fd);
 			request_serve_dynamic(current_request.fd, current_request.filename, current_request.cgiargs);
 		}
 		close_or_die(current_request.fd);

@@ -1,21 +1,16 @@
 #include <stdio.h>
 #include <sys/stat.h>
 
+#include "wserver.h"
 #include "request.h"
 #include "io_helper.h"
 
 
 
 
-char DEFAULT_ROOT[] = ".";
-
-
 //
-// ./wserver [-d <basedir>] [-p <portnum>] [-t s_threads_num] [-b buffer_size]
+// ./wserver [-d <base_dir>] [-p <port_num>] [-t s_threads_num] [-b buffer_size]
 //
-
-
-void *master_thread(void *input);
 
 int main(int argc, char *argv[])
 {
@@ -37,26 +32,23 @@ int main(int argc, char *argv[])
 			break;
 		case 'p':
 			port = atoi(optarg);
-			// if (!isdigit(port))
-			// 	fprintf(stderr, "[-p <port>] must be an integer \n");
-			// 	exit(1);
+			if (port <= 1023 || port > 65535)
+			{
+				fprintf(stderr, "[-p <port>]  port number must be greater than 1023 and less than 65535 \n");
+				exit(1);
+			}
 			break;
 		case 't':
 			s_threads_num = atoi(optarg);
-			// if (!isdigit(s_threads_num))
-			// 	fprintf(stderr, "[-t <s_threads_num>] must be an integer \n");
-			// 	exit(1);
+
 			break;
 		case 'b':
 			buffer_size = atoi(optarg);
 
-			// if (!isdigit(buffer_size))
-			// 	fprintf(stderr, "[-s <buffer_size>] must be an integer \n");
-			// 	exit(1);
 			break;
 
 		default:
-			fprintf(stderr, "usage: ./wserver [-d <basedir>] [-p <portnum>] [-t s_threads_num] [-b buffer_size]\n");
+			fprintf(stderr, "usage: ./wserver [-d <base_dir>] [-p <port_num>] [-t s_threads_num] [-b buffer_size]\n");
 			exit(1);
 		}
 
@@ -74,7 +66,7 @@ int main(int argc, char *argv[])
 
 void *master_thread(void *input){
 
-		char root_dir[MAXBUF];
+		char root_dir[ROOT_DIR_MAX_BUF];
 		strcpy(root_dir, ((master_thread_args *) input)->root_dir);
 		int port = ((master_thread_args *) input)->port;
 	 	int s_threads_num = ((master_thread_args *) input)->s_threads_num;;
