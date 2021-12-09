@@ -22,19 +22,20 @@ The server (suppoort only get requests)
 prompt > ./wserver [-d <base_dir>] [-p <port_num>] [-t s_threads_num] [-b buffer_size]
 ```
 Where 
-base_dir: this is the root directory from which the web server should
+
+**base_dir**: this is the root directory from which the web server should
 operate. 
 
-port: the port number that the web server should listen on; Default: 10000.
+**port**: the port number that the web server should listen on; Default: 10000.
 
-s_threads_num: the number of worker threads that should be created within the web
+**s_threads_num**: the number of worker threads that should be created within the web
 server. Must be a positive integer. Default: 1.
 
-buffer_size: the number of request connections that can be accepted at one
+**buffer_size**: the number of request connections that can be accepted at one
 time. Must be a positive integer. Note that it is not an error for more or
 less threads to be created than buffers. Default: 1.
 
-For example, you could run your program as:
+For example: 
 ```
 prompt > ./wserver -d ./ -p 30000 -t 4 -b 15
 ```
